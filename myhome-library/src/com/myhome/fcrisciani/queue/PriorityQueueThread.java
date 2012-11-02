@@ -49,6 +49,7 @@ public class PriorityQueueThread implements Runnable{
 						sk = MyHomeSocketFactory.openCommandSession(myConnector.ip, myConnector.port);
 					}catch(IOException e){
 						System.err.println("PriorityQueueThread: Problem during socket monitor opening - " + e.toString());
+						sk = null;
 						continue;
 					}
 				}
@@ -80,6 +81,8 @@ public class PriorityQueueThread implements Runnable{
 				}
 			}catch (Exception e) {
 				System.err.println("PriorityQueueThread: Not handled exception - " + e.toString());
+				output.close();
+				output = null;
 			}
 		}while(true);
 	}

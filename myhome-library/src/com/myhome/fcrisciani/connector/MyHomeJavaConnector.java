@@ -46,7 +46,7 @@ public class MyHomeJavaConnector{
 	 * @param command string representing the open command
 	 * @throws IOException in case of communication error
 	 */
-	public void sendCommandOPEN(Socket sk, String command) throws IOException{
+	public void sendCommandOPEN(final Socket sk, final String command) throws IOException{
 		if (command != null) {
 			PrintWriter output = new PrintWriter(sk.getOutputStream());
 			output.write(command);
@@ -59,7 +59,7 @@ public class MyHomeJavaConnector{
 	 * @return the array of commands received
 	 * @throws IOException in case of communication error
 	 */
-	private String[] receiveCommandOPEN(Socket sk) throws IOException{
+	private String[] receiveCommandOPEN(final Socket sk) throws IOException{
 		BufferedReader inputStream = new BufferedReader(new InputStreamReader(sk.getInputStream()));
 		String[] newMessage = MyHomeSocketFactory.readUntilAckNack(inputStream);
 
@@ -71,7 +71,7 @@ public class MyHomeJavaConnector{
 	 * @return the command received during monitoring
 	 * @throws IOException in case of communication error
 	 */
-	private String receiveMonitorOPEN(Socket sk) throws IOException{
+	private String receiveMonitorOPEN(final Socket sk) throws IOException{
 		BufferedReader inputStream = new BufferedReader(new InputStreamReader(sk.getInputStream()));
 		String newMessage =  MyHomeSocketFactory.readUntilDelimiter(inputStream);
 
@@ -84,7 +84,7 @@ public class MyHomeJavaConnector{
 	 * @param ip IP address of the webserver
 	 * @param port port number of the webserver
 	 */
-	public MyHomeJavaConnector(String ip, int port) {
+	public MyHomeJavaConnector(final String ip, final int port) {
 		super();
 		this.ip = ip;
 		this.port = port;
@@ -102,7 +102,7 @@ public class MyHomeJavaConnector{
 	 * @param command string representing the command to send
 	 * @return the array of commands received as a result of the command sent
 	 */
-	public String[] sendCommandSync(String command){
+	public String[] sendCommandSync(final String command){
 		try {
 			commandMutex.acquire();
 		} catch (InterruptedException e1) {
@@ -139,7 +139,7 @@ public class MyHomeJavaConnector{
 	 * @param command instance of the commandOpen to send
 	 * @return the array of commands received as a result of the command sent
 	 */
-	public String[] sendCommandSync(CommandOPEN command){
+	public String[] sendCommandSync(final CommandOPEN command){
 		return sendCommandSync(command.getCommandString());
 	}
 
@@ -149,7 +149,7 @@ public class MyHomeJavaConnector{
 	 * @param command string representing the command to send
 	 * @param priority queue priority {1 = HIGH, 2 = MEDIUM, 3 = LOW}
 	 */
-	public void sendCommandAsync(String command, int priority){
+	public void sendCommandAsync(final String command, final int priority){
 		if (priority == 1) {
 			commandQueue.addHighLevel(command);
 		}
@@ -165,7 +165,7 @@ public class MyHomeJavaConnector{
 	 * @param command instance of the commandOpen to send
 	 * @param priority queue priority {1 = HIGH, 2 = MEDIUM, 3 = LOW}
 	 */
-	public void sendCommandAsync(CommandOPEN command, int priority){
+	public void sendCommandAsync(final CommandOPEN command, final int priority){
 		sendCommandAsync(command.getCommandString(), priority);
 	}
 	/**
@@ -173,7 +173,7 @@ public class MyHomeJavaConnector{
 	 * @param commandList array of instances of the commandOpen to send
 	 * @param priority queue priority {1 = HIGH, 2 = MEDIUM, 3 = LOW}
 	 */
-	public void sendCommandListAsync(CommandOPEN[] commandList, int priority){
+	public void sendCommandListAsync(final CommandOPEN[] commandList, final int priority){
 		for (CommandOPEN command : commandList) {
 			sendCommandAsync(command.getCommandString(), priority);
 		}
@@ -183,12 +183,12 @@ public class MyHomeJavaConnector{
 	 * @param action instance of Action to send
 	 * @param priority queue priority {1 = HIGH, 2 = MEDIUM, 3 = LOW}
 	 */
-	public void sendAction(Action action, int priority){
+	public void sendAction(final Action action, final int priority){
 		for (CommandOPEN command : action.getCommandList()) {
 			sendCommandAsync(command, priority);
 			if (command instanceof DelayInterval && ((DelayInterval)command).getDelayInMillisecond() > 0) {
 				try {
-					Thread.sleep(((DelayInterval)command).getDelayInMillisecond()*1000);
+					Thread.sleep(((DelayInterval)command).getDelayInMillisecond());
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}

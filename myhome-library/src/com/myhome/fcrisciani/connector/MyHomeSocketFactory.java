@@ -32,7 +32,7 @@ public class MyHomeSocketFactory {
 	 * @return the message read
 	 * @throws IOException in case of problem with the input stream, close the stream
 	 */
-	protected static String readUntilDelimiter(BufferedReader inputStream) throws IOException,SocketTimeoutException{
+	protected static String readUntilDelimiter(final BufferedReader inputStream) throws IOException,SocketTimeoutException{
 		StringBuffer response = new StringBuffer();
 		int ci = 0;
 		char c = ' ';
@@ -68,7 +68,7 @@ public class MyHomeSocketFactory {
 	 * @return an array of messages
 	 * @throws IOException in case of problem with the input stream, close the stream
 	 */
-	protected static String[] readUntilAckNack(BufferedReader inputStream) throws IOException{
+	protected static String[] readUntilAckNack(final BufferedReader inputStream) throws IOException{
 		ArrayList<String> result = new ArrayList<String>();
 		String commandReceived  = null;
 		// Call multiple times the previous function to read more messages.
@@ -87,7 +87,7 @@ public class MyHomeSocketFactory {
 	 * @param str string to be controlled
 	 * @return true if the message is an ACK
 	 */
-	public static Boolean isACK(String str){
+	public static Boolean isACK(final String str){
 		return str.contentEquals("*#*1##");
 	}
 	/**
@@ -95,7 +95,7 @@ public class MyHomeSocketFactory {
 	 * @param str string to be controlled
 	 * @return true if the message is an NACK
 	 */
-	public static Boolean isNACK(String str){
+	public static Boolean isNACK(final String str){
 		return str.contentEquals("*#*0##");
 	}
 
@@ -106,7 +106,7 @@ public class MyHomeSocketFactory {
 	 * @return the socket ready to be used
 	 * @throws IOException if there is some problem with the socket opening
 	 */
-	public static Socket openCommandSession(String ip, int port) throws IOException{
+	public static Socket openCommandSession(final String ip, final int port) throws IOException{
 		Socket sk = new Socket(ip, port);
 
 		BufferedReader inputStream = new BufferedReader(new InputStreamReader(sk.getInputStream()));
@@ -132,7 +132,7 @@ public class MyHomeSocketFactory {
 	 * @return the socket ready to be used
 	 * @throws IOException if there is some problem with the socket opening
 	 */
-	public static Socket openMonitorSession(String ip, int port) throws IOException{
+	public static Socket openMonitorSession(final String ip, final int port) throws IOException{
 		Socket sk = new Socket(ip, port);
 		sk.setSoTimeout(45*1000);
 
@@ -157,7 +157,7 @@ public class MyHomeSocketFactory {
 	 * @param sk socket to be closed
 	 * @throws IOException if there is some problem with the socket closure
 	 */
-	public static void disconnect(Socket sk) throws IOException{
+	public static void disconnect(final Socket sk) throws IOException{
 		sk.close();
 	}
 
