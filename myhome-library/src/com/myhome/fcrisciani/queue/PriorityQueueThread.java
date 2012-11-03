@@ -23,24 +23,38 @@ public class PriorityQueueThread implements Runnable{
 	// ---- MEMBERS ---- //
 	MyHomeJavaConnector myConnector = null;
 	PriorityCommandQueue list = null;
-
+	Socket sk = null;
+	PrintWriter output = null;
+	
 	// ---- METHODS ---- //
+	private void closeSocket(){
+		if (output != null) {
+			output.close();
+			output = null;
+		}
+		if (sk != null) {
+			try {
+				MyHomeSocketFactory.disconnect(sk);
+			} catch (IOException e) {
+				System.err.println("PriorityQueueThread: Problem during connection closure - " + e.toString());
+				e.printStackTrace();
+			}
+			sk = null;
+		}
+	}
 	/**
 	 * Create the Priority Queue Thread giving the reference to the MyHome connector and the Priority queue
 	 * @param myConnector myhome connector used only for IP, port read
 	 * @param list priority queue to handle
 	 */
-	public PriorityQueueThread(MyHomeJavaConnector myConnector, PriorityCommandQueue list) {
+	public PriorityQueueThread(final MyHomeJavaConnector myConnector, final PriorityCommandQueue list) {
 		this.myConnector = myConnector;
 		this.list = list;
 	}
 
-
 	@Override
 	public void run() {
-		Socket sk = null;
 		String tosend = null;
-		PrintWriter output = null;
 		do{
 			try{
 				tosend = list.getCommand();
@@ -49,7 +63,6 @@ public class PriorityQueueThread implements Runnable{
 						sk = MyHomeSocketFactory.openCommandSession(myConnector.ip, myConnector.port);
 					}catch(IOException e){
 						System.err.println("PriorityQueueThread: Problem during socket monitor opening - " + e.toString());
-						sk = null;
 						continue;
 					}
 				}
@@ -61,6 +74,7 @@ public class PriorityQueueThread implements Runnable{
 					output.flush();
 				}catch(IOException e){
 					System.err.println("PriorityQueueThread: Problem during command sending - " + e.toString());
+					closeSocket();
 					continue;
 				}
 				try{
@@ -70,19 +84,11 @@ public class PriorityQueueThread implements Runnable{
 					continue;
 				}
 				if(list.numCommands() == 0){        // There are no more message to handle close command session
-					try{
-						output.close();
-						output = null;
-						MyHomeSocketFactory.disconnect(sk);
-						sk = null;
-					}catch(IOException e){
-						System.err.println("PriorityQueueThread: Problem during connection closure - " + e.toString());
-					}
+					closeSocket();
 				}
 			}catch (Exception e) {
 				System.err.println("PriorityQueueThread: Not handled exception - " + e.toString());
-				output.close();
-				output = null;
+				closeSocket();
 			}
 		}while(true);
 	}
