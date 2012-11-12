@@ -16,6 +16,7 @@ import java.util.concurrent.Semaphore;
 import com.myhome.fcrisciani.datastructure.action.Action;
 import com.myhome.fcrisciani.datastructure.command.CommandOPEN;
 import com.myhome.fcrisciani.datastructure.command.DelayInterval;
+import com.myhome.fcrisciani.exception.MalformedCommandOPEN;
 import com.myhome.fcrisciani.queue.PriorityCommandQueue;
 import com.myhome.fcrisciani.queue.PriorityQueueThread;
 
@@ -41,12 +42,23 @@ public class MyHomeJavaConnector{
 
 	// ---- METHODS ---- //
 	/**
+	 * Evaluates if the command that is going to be sent is a valid command
+	 * @param commandString is the command in string format
+	 * @return returns true if the format is correct
+	 */
+	private boolean checkCommandFormat(String commandString){
+		if (commandString.matches("\\*[#0-9]+[*#0-9]*##")){
+			return true;
+		}
+		return false;
+	}
+	/**
 	 * Sends a command as a string on the command socket passed
 	 * @param sk command socket on which send the command
 	 * @param command string representing the open command
 	 * @throws IOException in case of communication error
 	 */
-	public void sendCommandOPEN(final Socket sk, final String command) throws IOException{
+	private void sendCommandOPEN(final Socket sk, final String command) throws IOException{
 		if (command != null) {
 			PrintWriter output = new PrintWriter(sk.getOutputStream());
 			output.write(command);
@@ -101,45 +113,52 @@ public class MyHomeJavaConnector{
 	 * command results before closing the socket created
 	 * @param command string representing the command to send
 	 * @return the array of commands received as a result of the command sent
+	 * @throws MalformedCommandOPEN 
 	 */
-	public String[] sendCommandSync(final String command){
-		try {
-			commandMutex.acquire();
-		} catch (InterruptedException e1) {
-			e1.printStackTrace();
+	public String[] sendCommandSync(final String command) throws MalformedCommandOPEN{
+		if (checkCommandFormat(command)) {
+			try {
+				commandMutex.acquire();
+			} catch (InterruptedException e1) {
+				e1.printStackTrace();
+			}
+	
+			/** START CRITICAL SECTION */
+			String[] result = null;
+	
+			try{
+				commandSk = MyHomeSocketFactory.openCommandSession(ip, port);
+	
+				sendCommandOPEN(commandSk, command);
+				result = receiveCommandOPEN(commandSk);
+	
+				// Assure an intertime between messages that can be sent with multiple call
+				Thread.sleep(300);
+	
+				MyHomeSocketFactory.disconnect(commandSk);
+			}catch(IOException e){
+				e.printStackTrace();
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+	
+			commandMutex.release();
+			/** END CRITICAL SECTION */
+	
+			return result;
 		}
-
-		/** START CRITICAL SECTION */
-		String[] result = null;
-
-		try{
-			commandSk = MyHomeSocketFactory.openCommandSession(ip, port);
-
-			sendCommandOPEN(commandSk, command);
-			result = receiveCommandOPEN(commandSk);
-
-			// Assure an intertime between messages that can be sent with multiple call
-			Thread.sleep(300);
-
-			MyHomeSocketFactory.disconnect(commandSk);
-		}catch(IOException e){
-			e.printStackTrace();
-		} catch (InterruptedException e) {
-			e.printStackTrace();
+		else{
+			throw new MalformedCommandOPEN(command);
 		}
-
-		commandMutex.release();
-		/** END CRITICAL SECTION */
-
-		return result;
 	}
 	/**
 	 * Send a command synchronously and atomically, create a new command socket, sends the command and returns
 	 * command results before closing the socket created
 	 * @param command instance of the commandOpen to send
 	 * @return the array of commands received as a result of the command sent
+	 * @throws MalformedCommandOPEN 
 	 */
-	public String[] sendCommandSync(final CommandOPEN command){
+	public String[] sendCommandSync(final CommandOPEN command) throws MalformedCommandOPEN{
 		return sendCommandSync(command.getCommandString());
 	}
 
@@ -148,32 +167,40 @@ public class MyHomeJavaConnector{
 	 * Send a command asynchronously, this is queued with a priority and sent automatically
 	 * @param command string representing the command to send
 	 * @param priority queue priority {1 = HIGH, 2 = MEDIUM, 3 = LOW}
+	 * @throws MalformedCommandOPEN 
 	 */
-	public void sendCommandAsync(final String command, final int priority){
-		if (priority == 1) {
-			commandQueue.addHighLevel(command);
-		}
-		else if (priority == 2) {
-			commandQueue.addMediumLevel(command);
+	public void sendCommandAsync(final String command, final int priority) throws MalformedCommandOPEN{
+		if (checkCommandFormat(command)) {
+			if (priority == 1) {
+				commandQueue.addHighLevel(command);
+			}
+			else if (priority == 2) {
+				commandQueue.addMediumLevel(command);
+			}
+			else{
+				commandQueue.addLowLevel(command);
+			}
 		}
 		else{
-			commandQueue.addLowLevel(command);
+			throw new MalformedCommandOPEN(command);
 		}
 	}
 	/**
 	 * Send a command asynchronously, this is queued with a priority and sent automatically
 	 * @param command instance of the commandOpen to send
 	 * @param priority queue priority {1 = HIGH, 2 = MEDIUM, 3 = LOW}
+	 * @throws MalformedCommandOPEN 
 	 */
-	public void sendCommandAsync(final CommandOPEN command, final int priority){
+	public void sendCommandAsync(final CommandOPEN command, final int priority) throws MalformedCommandOPEN{
 		sendCommandAsync(command.getCommandString(), priority);
 	}
 	/**
 	 * Send a list of commands asynchronously, these are queued with a priority and sent automatically
 	 * @param commandList array of instances of the commandOpen to send
 	 * @param priority queue priority {1 = HIGH, 2 = MEDIUM, 3 = LOW}
+	 * @throws MalformedCommandOPEN 
 	 */
-	public void sendCommandListAsync(final CommandOPEN[] commandList, final int priority){
+	public void sendCommandListAsync(final CommandOPEN[] commandList, final int priority) throws MalformedCommandOPEN{
 		for (CommandOPEN command : commandList) {
 			sendCommandAsync(command.getCommandString(), priority);
 		}
@@ -182,8 +209,9 @@ public class MyHomeJavaConnector{
 	 * Send an Action asynchronously, all its commands are queued with a priority and sent automatically
 	 * @param action instance of Action to send
 	 * @param priority queue priority {1 = HIGH, 2 = MEDIUM, 3 = LOW}
+	 * @throws MalformedCommandOPEN 
 	 */
-	public void sendAction(final Action action, final int priority){
+	public void sendAction(final Action action, final int priority) throws MalformedCommandOPEN{
 		for (CommandOPEN command : action.getCommandList()) {
 			sendCommandAsync(command, priority);
 			if (command instanceof DelayInterval && ((DelayInterval)command).getDelayInMillisecond() > 0) {
