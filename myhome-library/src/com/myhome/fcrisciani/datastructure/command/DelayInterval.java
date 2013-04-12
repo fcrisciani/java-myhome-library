@@ -26,6 +26,9 @@ public class DelayInterval extends CommandOPEN {
 	 */
 	public DelayInterval(String who, String where, long delayInMillisecond) {
 		super("", 6, who, where);
+		if (delayInMillisecond < 0) {
+			delayInMillisecond = 0;
+		}
 		this.delayInMillisecond = delayInMillisecond;
 	}
 	/** 

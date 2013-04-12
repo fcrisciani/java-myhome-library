@@ -7,7 +7,6 @@ package com.myhome.fcrisciani.datastructure.action;
 import java.util.ArrayList;
 
 import com.myhome.fcrisciani.datastructure.command.CommandOPEN;
-import com.myhome.fcrisciani.datastructure.command.DelayInterval;
 
 /**
  * @author Flavio Crisciani
@@ -18,7 +17,11 @@ public class Action {
 
 	// ---- MEMBERS ---- //
 
-	private ArrayList<CommandOPEN> commandList = null;				// List of OpenWebNet Commands to execute
+	private ArrayList<CommandOPEN> resetCommandList = null;			// List of OpenWebNet Commands to execute
+	private ArrayList<CommandOPEN> preDelayCommandList = null;		// List of OpenWebNet Commands to execute
+	private CommandOPEN	 		   delayCommand = null;				// List of OpenWebNet Commands to execute
+	private ArrayList<CommandOPEN> postDelayCommandList = null;		// List of OpenWebNet Commands to execute
+	
 	private boolean commandWithDelay = false;						// Indicates if this action contains a delay as a command
 	private Integer[] sensorIdInhibitionList = null; 				// List of sensors id that can inhibit the Action execution
 	private String description = null;								// Description associated to this action
@@ -32,7 +35,9 @@ public class Action {
 	 */
 	public Action(String description, Integer[] sensorIdInibitionList) {
 		super();
-		this.commandList = new ArrayList<CommandOPEN>();
+		this.resetCommandList = new ArrayList<CommandOPEN>();
+		this.preDelayCommandList = new ArrayList<CommandOPEN>();
+		this.postDelayCommandList = new ArrayList<CommandOPEN>();
 		this.description = description;
 		this.sensorIdInhibitionList = sensorIdInibitionList;
 	}
@@ -51,18 +56,36 @@ public class Action {
 	 * @param resetCommandList command to put on front of the command list
 	 */
 	public void addResetCommandProcedure(ArrayList<CommandOPEN> resetCommandList){
-		commandWithDelay = true;
-		commandList.addAll(0, resetCommandList);
+		this.resetCommandList.addAll(resetCommandList);
 	}
 	/**
-	 * Add a command to this action
+	 * Add a command to this action that is executed before the delay
 	 * @param command command to put on front of the command list
 	 */
-	public void addCommand(CommandOPEN command){
-		if (command instanceof DelayInterval) {
-			commandWithDelay = true;
-		}
-		commandList.add(command);
+	public void addPreDelayCommand(CommandOPEN command){
+		preDelayCommandList.add(command);
+	}
+	/**
+	 * Add a command to this action that is executed before the delay
+	 * @param command command to put on front of the command list
+	 */
+	public int getPreDelayCommandListLength(){
+		return preDelayCommandList.size();
+	}
+	/**
+	 * Add a delay to this action
+	 * @param command command to put on front of the command list
+	 */
+	public void addDelayCommand(CommandOPEN command){
+		commandWithDelay = true;
+		delayCommand = command;
+	}
+	/**
+	 * Add a command to this action that is executed after the delay
+	 * @param command command to put on front of the command list
+	 */
+	public void addPostDelayCommand(CommandOPEN command){
+		postDelayCommandList.add(command);
 	}
 
 	/**
@@ -70,7 +93,17 @@ public class Action {
 	 * @return list of command
 	 */
 	public ArrayList<CommandOPEN> getCommandList() {
-		return commandList;
+		ArrayList<CommandOPEN> returnList = new ArrayList<CommandOPEN>();
+		if (resetCommandList != null) {
+			returnList.addAll(resetCommandList);
+		}
+		returnList.addAll(preDelayCommandList);
+		if (commandWithDelay) {
+			returnList.add(delayCommand);
+			returnList.addAll(postDelayCommandList);
+		}
+		
+		return returnList;
 	}
 
 	/**
@@ -105,7 +138,19 @@ public class Action {
 
 	@Override
 	public String toString() {
-		return "Action: " + description + " [commandList=" + commandList + "]";
+		StringBuilder resultString = new StringBuilder();
+		resultString.append("Action: " + description + " [commandList:");
+		for (CommandOPEN command : getCommandList()) {
+			if (command != null){
+				resultString.append(command);
+			}
+			else{
+				resultString.append("null");
+			}
+		}
+		resultString.append("]");
+		
+		return resultString.toString();
 	}
 
 }

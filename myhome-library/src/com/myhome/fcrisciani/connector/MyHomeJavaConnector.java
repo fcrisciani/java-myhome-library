@@ -11,6 +11,7 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.concurrent.Semaphore;
+import java.util.ArrayList;
 
 
 import com.myhome.fcrisciani.datastructure.action.Action;
@@ -212,13 +213,18 @@ public class MyHomeJavaConnector{
 	 * @throws MalformedCommandOPEN 
 	 */
 	public void sendAction(final Action action, final int priority) throws MalformedCommandOPEN{
-		for (CommandOPEN command : action.getCommandList()) {
-			sendCommandAsync(command, priority);
-			if (command instanceof DelayInterval && ((DelayInterval)command).getDelayInMillisecond() > 0) {
-				try {
-					Thread.sleep(((DelayInterval)command).getDelayInMillisecond());
-				} catch (InterruptedException e) {
-					e.printStackTrace();
+		ArrayList<CommandOPEN> commandList = action.getCommandList();
+		for (CommandOPEN command : commandList) {
+			if (command != null) {
+				if (command instanceof DelayInterval && ((DelayInterval)command).getDelayInMillisecond() > 0) {
+					try {
+						Thread.sleep(((DelayInterval)command).getDelayInMillisecond());
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+				}
+				else{
+					sendCommandAsync(command, priority);
 				}
 			}
 		}
