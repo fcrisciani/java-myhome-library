@@ -67,9 +67,9 @@ public class PriorityCommandQueue {
 		}
 		if(level1.size() > 0)
 			resultCommand = level1.remove(0);
-		if(level2.size() > 0)
+		else if(level2.size() > 0)
 			resultCommand = level2.remove(0);
-		if(level3.size() > 0)
+		else if(level3.size() > 0)
 			resultCommand = level3.remove(0);
 
 		return resultCommand;
